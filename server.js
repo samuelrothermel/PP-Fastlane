@@ -39,7 +39,16 @@ app.post('/api/card_order', async (req, res) => {
 });
 
 app.post('/api/create_order', async (req, res) => {
+  // console.log('creating order on server');
   let result = await handle_create_order(req.body);
+  // console.log('received response on create order');
+
+  // Log the response before sending it
+  console.log('Response:', {
+    statusCode: result.statusCode,
+    body: result.body,
+  });
+
   res.status(result.statusCode).json(result.body);
 });
 
@@ -119,7 +128,7 @@ const handle_fastlane_auth = async () => {
     );
     // console.log('fastlane_auth_response', fastlane_auth_response_json);
     let fastlane_auth_response_json = await response.json();
-    console.log('fastlane_auth_response', fastlane_auth_response_json);
+    // console.log('fastlane_auth_response', fastlane_auth_response_json);
     return {
       statusCode: 200,
       body: { access_token: fastlane_auth_response_json.access_token },
@@ -150,11 +159,19 @@ const handle_card_order = async request_body => {
 const handle_create_order = async request_body => {
   try {
     let { amount, payment_source, shipping_address } = request_body;
+    console.log('Received request body:', request_body);
+
     let create_order_request = await create_order({
       amount,
       payment_source,
       shipping_address,
     });
+    console.log('Order created:', create_order_request);
+
+    if (!create_order_request.id) {
+      console.error('Order id is undefined:', create_order_request);
+    }
+
     return { statusCode: 200, body: create_order_request };
   } catch (error) {
     console.error('Error in handle_create_order:', error);
@@ -261,6 +278,7 @@ const create_order = async request_object => {
     let access_token_response = await get_access_token();
     let access_token = access_token_response.access_token;
     let create_order_endpoint = `${PAYPAL_API_BASE_URL}/v2/checkout/orders`;
+    // console.log('payment source', payment_source);
     let purchase_unit_object = {
       amount: {
         currency_code: 'USD',
@@ -335,6 +353,7 @@ const create_order = async request_object => {
       payload.payment_source.card = { single_use_token: single_use_token };
     }
 
+    console.log('create order request payload', payload);
     let create_order_request = await fetch(create_order_endpoint, {
       method: 'POST',
       headers: {
@@ -346,6 +365,7 @@ const create_order = async request_object => {
     });
 
     let json_response = await create_order_request.json();
+    console.log('json response from create order request', json_response);
 
     if (payment_source === 'card') {
       let sanitized_card_capture_response = {

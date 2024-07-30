@@ -39,7 +39,7 @@ let customer_context_id;
 let tokenize_response;
 let tokenize_id;
 let order_id;
-let server_endpoint = '/api/'; // Updated server endpoint
+let server_endpoint = '/api'; // Updated server endpoint
 let single_use_token;
 let fastlane_options_object;
 let payment_source;
@@ -59,7 +59,7 @@ window.localStorage.setItem('axoEnv', 'sandbox');
 // Fetch an authentication token from the server to load fastlane SDK (card payments)
 function get_auth() {
   // console.log('server endpoint for get_auth', server_endpoint);
-  return fetch('/api/fastlane_auth', {
+  return fetch(`${server_endpoint}/fastlane_auth`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -162,6 +162,9 @@ async function init_fastlane_methods() {
         },
       },
     };
+    // To use the "Flexible" Fastlane integration where you have
+    // more customized UI, you can use the following instead:
+    // FastlaneCardFieldComponent = await fastlane.FastlaneCardFieldComponent(fastlane_options_object);
     FastlanePaymentComponent = await fastlane.FastlanePaymentComponent(
       fastlane_options_object
     );
@@ -294,7 +297,7 @@ async function handle_existing_customer(customer_context_id) {
 // Handles guest payer scenario (no fastlane profile found).
 function handle_guest_payer() {
   is_guest_payer = true;
-  console.log('Handling guest payer');
+  console.log('No Fastlane Profile Found -- Handling Guest Payer');
   // You can also modify your UI to inform the user that they're a guest payer.
 }
 
@@ -305,7 +308,7 @@ function bootstrap_standard_button(options) {
     style: options.style,
     createOrder: function (data, actions) {
       // Creates an order and returns the order ID.
-      return fetch(`${server_endpoint}/create-paypal-order`, {
+      return fetch(`${server_endpoint}/create_order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -319,7 +322,8 @@ function bootstrap_standard_button(options) {
     },
     onApprove: function (data, actions) {
       // Handles the approval of the payment.
-      return fetch(`${server_endpoint}/capture-paypal-order`, {
+      console.log('order ID: ', data.orderID);
+      return fetch(`${server_endpoint}/complete_order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -341,8 +345,9 @@ function bootstrap_standard_button(options) {
 }
 
 // Submits the payment to the server.
-function process_payment(payment_payload) {
-  fetch(`${server_endpoint}/process-payment`, {
+// Needs a lot of work.
+async function process_payment(payment_payload) {
+  fetch(`${server_endpoint}/complete_order`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
